@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 func main() {
 	processor := NewTicketLineProcessor()
@@ -44,11 +47,22 @@ func (t *ticketLineProcessor) MaxTicketSeen() Ticket {
 }
 
 func (t *ticketLineProcessor) MissingTicket() Ticket {
-	for i := MinPossibleTicket; i < t.minTicket; i++ {
-		t.allTickets ^= i
+	return t.allTickets ^ xorUpTo(t.minTicket) ^ t.minTicket ^ xorUpTo(t.maxTicket)
+}
+
+// returns result of doing xor of 0-n inclusive.
+func xorUpTo(n Ticket) Ticket {
+	switch n % 4 {
+	case 0:
+		return n
+	case 1:
+		return 1
+	case 2:
+		return n+1
+	case 3:
+		return 0
+	default:
+		log.Fatal("Should be impossible")
 	}
-	for i := MaxPossibleTicket; i > t.maxTicket; i-- {
-		t.allTickets ^= i
-	}
-	return t.allTickets & MaxPossibleTicket
+	return 0
 }
