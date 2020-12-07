@@ -1,12 +1,13 @@
 package main
 
 import (
+	"advent/common/lineprocessor"
 	"fmt"
 )
 
 func main() {
 	processor := &processor{}
-	processLinesInFile("day6/input.txt", processor)
+	lineprocessor.ProcessLinesInFile("day6/input.txt", processor)
 	fmt.Printf("sum ticket: %d\n", processor.GetCount())
 }
 

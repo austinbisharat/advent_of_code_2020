@@ -1,4 +1,4 @@
-package main
+package lineprocessor
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ type LineProcessor interface {
 	ProcessLine(int, string) error
 }
 
-func processLinesInFile(path string, processor LineProcessor) {
+func ProcessLinesInFile(path string, processor LineProcessor) {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)

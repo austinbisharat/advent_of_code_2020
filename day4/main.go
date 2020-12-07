@@ -1,11 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"advent/common/lineprocessor"
+	"fmt"
+)
 
 func main() {
 
 	processor := &PassportValidatorLineProcessor{}
-	processLinesInFile("day4/input.txt", processor)
+	lineprocessor.ProcessLinesInFile("day4/input.txt", processor)
 	fmt.Printf("Valid passport count: %v\n", processor.GetValidCount())
 
 }

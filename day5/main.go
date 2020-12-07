@@ -1,13 +1,14 @@
 package main
 
 import (
+	"advent/common/lineprocessor"
 	"fmt"
 	"log"
 )
 
 func main() {
 	processor := NewTicketLineProcessor()
-	processLinesInFile("day5/input.txt", processor)
+	lineprocessor.ProcessLinesInFile("day5/input.txt", processor)
 	fmt.Printf("Max ticket: %d\n", processor.MaxTicketSeen())
 	fmt.Printf("Missing ticket: %d\n", processor.MissingTicket())
 }
