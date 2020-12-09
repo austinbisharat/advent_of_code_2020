@@ -84,6 +84,7 @@ func (p *xmasStreamProcessor) GetFirstInvalidNum() int {
 	return *p.firstInvalidElement
 }
 
+// currently n log n
 func (p *xmasStreamProcessor) GetMinMaxFromInvalidSumRun() (int, int) {
 	low, high := p.getInvalidSumRun()
 
