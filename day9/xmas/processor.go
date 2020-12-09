@@ -11,7 +11,7 @@ type xmasStreamProcessor struct {
 	lastKElementsCountSet map[int]int
 
 	firstInvalidElement *int
-	prefixSums          []int
+	elements            []int
 }
 
 func NewXmasStreamProcessor(k int) *xmasStreamProcessor {
@@ -21,7 +21,6 @@ func NewXmasStreamProcessor(k int) *xmasStreamProcessor {
 		lastKElementsCountSet: make(map[int]int),
 
 		firstInvalidElement: nil,
-		prefixSums:          []int{0},
 	}
 }
 
@@ -31,7 +30,7 @@ func (p *xmasStreamProcessor) ProcessLine(i int, line string) error {
 		return err
 	}
 
-	p.updatePrefixSums(num)
+	p.elements = append(p.elements, num)
 
 	if p.lastKElements.Len() < p.k {
 		p.lastKElements.PushBack(num)
@@ -76,22 +75,17 @@ func (p *xmasStreamProcessor) checkValidity(num int) {
 	}
 }
 
-func (p *xmasStreamProcessor) updatePrefixSums(num int) {
-	p.prefixSums = append(p.prefixSums, num+p.prefixSums[len(p.prefixSums)-1])
-}
-
 func (p *xmasStreamProcessor) GetFirstInvalidNum() int {
 	return *p.firstInvalidElement
 }
 
-// currently n log n
 func (p *xmasStreamProcessor) GetMinMaxFromInvalidSumRun() (int, int) {
 	low, high := p.getInvalidSumRun()
 
 	var max *int
 	var min *int
-	for i := low; i < high; i++ {
-		num := p.prefixSums[i+1] - p.prefixSums[i]
+	for i := low; i <= high; i++ {
+		num := p.elements[i]
 
 		if min == nil || *min < num {
 			min = &num
@@ -107,26 +101,19 @@ func (p *xmasStreamProcessor) GetMinMaxFromInvalidSumRun() (int, int) {
 func (p *xmasStreamProcessor) getInvalidSumRun() (low, high int) {
 	target := *p.firstInvalidElement
 
-	for low := 0; low < len(p.prefixSums)-2; low++ {
-		lowHigh := low + 2
-		highHigh := len(p.prefixSums)
-		for lowHigh <= highHigh {
-			high = ((highHigh + lowHigh - 1) / 2) + 1
-			rangeSum := p.computeRangeSum(low, high)
-			if rangeSum > target {
-				highHigh = high - 1
-			} else if rangeSum < target {
-				lowHigh = high + 1
-			} else {
-				return low, high
-			}
+	indexByPrefixSum := map[int]int{}
+	var sum int
+	for i, element := range p.elements {
+		sum += element
+
+		if sum == target && i > 0 {
+			return 0, i
+		} else if lowIdx, present := indexByPrefixSum[sum-target]; present {
+			return lowIdx + 1, i
 		}
+
+		indexByPrefixSum[sum] = i
 	}
 
 	panic("uhoh")
-}
-
-// computes sum of the range starting at index low inclusive to high exclusive
-func (p *xmasStreamProcessor) computeRangeSum(low, high int) int {
-	return p.prefixSums[high] - p.prefixSums[low]
 }
