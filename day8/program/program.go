@@ -64,6 +64,8 @@ func (r *Runtime) runStep() {
 		r.instructionPointer += statement.argument
 	case STNop:
 		r.instructionPointer++
+	case STTerm:
+		fmt.Printf("Program terminated. Counter: %d\n", r.accumulator)
 	default:
 		log.Fatalf("Unknown statemnt type: %s", statement.statementType)
 	}
@@ -112,9 +114,72 @@ type Program struct {
 	statements []statement
 }
 
+func (p *Program) RemoveInfiniteLoop() error {
+	p.statements = append(p.statements, statement{
+		statementType: STTerm,
+		argument:      0,
+	})
+
+	terminatingStatements := p.findTerminatingStatements()
+
+	var ip int
+	for !terminatingStatements[p.statements[ip].getNextIP(ip)] {
+		ip = p.statements[ip].getNextIP(ip)
+		statement := p.statements[ip]
+
+		if statement.statementType == STJmp {
+			statement.statementType = STNop
+		} else if statement.statementType == STNop {
+			statement.statementType = STJmp
+		}
+
+		if terminatingStatements[statement.getNextIP(ip)] {
+			p.statements[ip] = statement
+		}
+	}
+
+	return nil
+}
+
+func (p *Program) buildProgramGraph() (statementIdxToPredecessors [][]int) {
+	statementIdxToPredecessors = make([][]int, len(p.statements))
+
+	for ip, statement := range p.statements {
+		nextIP := statement.getNextIP(ip)
+		if nextIP >= len(p.statements) {
+			continue
+		}
+		statementIdxToPredecessors[nextIP] = append(statementIdxToPredecessors[nextIP], ip)
+	}
+	return statementIdxToPredecessors
+}
+
+func (p *Program) findTerminatingStatements() map[int]bool {
+	statementIdxToPredecessors := p.buildProgramGraph()
+
+	terminatingStatementIdx := len(p.statements) - 1
+	discovered := map[int]bool{terminatingStatementIdx: true}
+	toVisit := []int{terminatingStatementIdx}
+
+	for len(toVisit) > 0 {
+		cur := toVisit[0]
+		toVisit = toVisit[1:]
+		for _, predecessor := range statementIdxToPredecessors[cur] {
+			if discovered[predecessor] {
+				continue
+			}
+
+			discovered[predecessor] = true
+			toVisit = append(toVisit, predecessor)
+		}
+	}
+
+	return discovered
+}
+
 func (p *Program) ProcessLine(_ int, line string) error {
 	var s statement
-	err := s.Parse(line)
+	err := s.parse(line)
 	if err != nil {
 		return err
 	}
@@ -132,9 +197,10 @@ func LoadProgram(filepath string) *Program {
 type StatementType string
 
 const (
-	STAcc StatementType = "acc"
-	STJmp StatementType = "jmp"
-	STNop StatementType = "nop"
+	STAcc  StatementType = "acc"
+	STJmp  StatementType = "jmp"
+	STNop  StatementType = "nop"
+	STTerm StatementType = "term"
 )
 
 type statement struct {
@@ -144,7 +210,7 @@ type statement struct {
 
 var statementRegex = regexp.MustCompile("^(acc|jmp|nop) ([+-][0-9]+)$")
 
-func (s *statement) Parse(statement string) error {
+func (s *statement) parse(statement string) error {
 	submatches := statementRegex.FindStringSubmatch(statement)
 	if len(submatches) != 3 {
 		return fmt.Errorf("invalid statement: \"%s\"did not match regex %v", statement, statementRegex)
@@ -155,4 +221,11 @@ func (s *statement) Parse(statement string) error {
 	s.argument, err = strconv.Atoi(submatches[2])
 	return err
 
+}
+
+func (s *statement) getNextIP(currentIP int) int {
+	if s.statementType == STJmp {
+		return currentIP + s.argument
+	}
+	return currentIP + 1
 }
