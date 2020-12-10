@@ -1,6 +1,7 @@
 package joltage
 
 import (
+	"container/list"
 	"log"
 	"strconv"
 )
@@ -55,23 +56,24 @@ func (p *joltProcessor) GetDiffDistribution() []int {
 }
 
 func (p *joltProcessor) CountArrangements() uint {
-	arrangementCounts := make([]uint, p.maxJoltage+1)
+	arrangementCounts := list.New()
 
-	arrangementCounts[0] = 1
+	arrangementCounts.PushBack(uint(1))
 	for i := 1; i <= p.maxJoltage; i++ {
 		if !p.adapterJoltages[i] {
-			continue
+			arrangementCounts.PushBack(uint(0))
+		} else {
+			var sum uint
+			for cur := arrangementCounts.Front(); cur != nil; cur = cur.Next() {
+				sum += cur.Value.(uint)
+			}
+			arrangementCounts.PushBack(sum)
 		}
 
-		arrangementsUpToN := arrangementCounts[i-1]
-		if i-2 >= 0 {
-			arrangementsUpToN += arrangementCounts[i-2]
+		if arrangementCounts.Len() > p.maxExpectedDiff {
+			arrangementCounts.Remove(arrangementCounts.Front())
 		}
-		if i-3 >= 0 {
-			arrangementsUpToN += arrangementCounts[i-3]
-		}
-		arrangementCounts[i] = arrangementsUpToN
 	}
 
-	return arrangementCounts[p.maxJoltage]
+	return arrangementCounts.Back().Value.(uint)
 }
