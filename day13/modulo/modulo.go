@@ -35,8 +35,8 @@ func ExtendedGCD(a, b int) ExtendedGCDResult {
 	for b > 0 {
 		q := a / b
 		x, prevX = prevX-q*x, x
-		x, prevY = prevY-q*y, y
-		a, b = b, a%b
+		y, prevY = prevY-q*y, y
+		a, b = b, Mod(a, b)
 	}
 	return ExtendedGCDResult{
 		GCD: a,
@@ -47,12 +47,11 @@ func ExtendedGCD(a, b int) ExtendedGCDResult {
 
 // assumes gcd(a, m) = 1
 func modInverse(a, m int) int {
-	for i := 0; i < m; i++ {
-		if (i*a)%m == 1 {
-			return i
-		}
+	inv := ExtendedGCD(a, m).X
+	if inv < 0 {
+		inv += m
 	}
-	return ExtendedGCD(a, m).X
+	return inv
 }
 
 func Mod(n, base int) int {
