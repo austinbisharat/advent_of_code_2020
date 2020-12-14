@@ -1,6 +1,8 @@
 package bitmask
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Mask struct {
 	s     string
@@ -39,6 +41,28 @@ func (m *Mask) Apply(n uint64) uint64 {
 	return n
 }
 
+func (m *Mask) ApplyAddress(address uint64) []uint64 {
+	address |= m.ones
+	addresses := []uint64{address}
+
+	xs := (m.ones ^ m.zeros) & (1<<36 - 1)
+	for i := 0; i < 36; i++ {
+		singleX := uint64(1 << i)
+
+		if singleX&xs != 0 {
+			numAdresses := len(addresses)
+			for j := 0; j < numAdresses; j++ {
+				if addresses[j]|singleX != addresses[j] {
+					addresses = append(addresses, addresses[j]|singleX)
+				} else {
+					addresses = append(addresses, addresses[j]^singleX)
+				}
+			}
+		}
+	}
+	return addresses
+}
+
 type ProgramMemory struct {
 	memory map[uint64]uint64
 	mask   Mask
@@ -60,11 +84,20 @@ func (pm *ProgramMemory) UpdateMask(mask Mask) {
 
 func (pm *ProgramMemory) UpdateMemory(address, value uint64) {
 	fmt.Printf("Updating memory at address %d with %d\n", address, value)
+	pm.updateMemory(address, pm.mask.Apply(value))
+}
+
+func (pm *ProgramMemory) UpdateMemoryV2(address, value uint64) {
+	for _, addr := range pm.mask.ApplyAddress(address) {
+		pm.updateMemory(addr, value)
+	}
+}
+
+func (pm *ProgramMemory) updateMemory(address, value uint64) {
 	prevVal, exists := pm.memory[address]
 	if exists {
 		pm.curSum -= prevVal
 	}
-	value = pm.mask.Apply(value)
 	pm.memory[address] = value
 	pm.curSum += value
 }

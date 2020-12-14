@@ -9,13 +9,19 @@ import (
 )
 
 func main() {
-	runtime := &ProgramRuntime{memory: bitmask.NewProgramMemory()}
+	runtime := &ProgramRuntime{
+		memory:   bitmask.NewProgramMemory(),
+		memoryV2: bitmask.NewProgramMemory(),
+	}
+
 	lineprocessor.ProcessLinesInFile("day14/input.txt", runtime)
 	fmt.Printf("Memory sum: %d\n", runtime.memory.GetSum())
+	fmt.Printf("Memory v2 sum: %d\n", runtime.memoryV2.GetSum())
 }
 
 type ProgramRuntime struct {
-	memory *bitmask.ProgramMemory
+	memory   *bitmask.ProgramMemory
+	memoryV2 *bitmask.ProgramMemory
 }
 
 var maskRegex = regexp.MustCompile("^mask = ([X10]{36})$")
@@ -30,6 +36,7 @@ func (r *ProgramRuntime) ProcessLine(_ int, line string) error {
 			return err
 		}
 		r.memory.UpdateMask(mask)
+		r.memoryV2.UpdateMask(mask)
 	} else if memSubmatches := memRegex.FindStringSubmatch(line); memSubmatches != nil {
 		address, err := strconv.ParseUint(memSubmatches[1], 10, 64)
 		if err != nil {
@@ -40,6 +47,7 @@ func (r *ProgramRuntime) ProcessLine(_ int, line string) error {
 			return err
 		}
 		r.memory.UpdateMemory(address, value)
+		r.memoryV2.UpdateMemoryV2(address, value)
 	} else {
 		return fmt.Errorf("invalid line: %s", line)
 	}
