@@ -17,7 +17,6 @@ func ProcessLinesInFile(path string, processor LineProcessor) {
 	}
 	defer file.Close()
 
-
 	scanner := bufio.NewScanner(file)
 	i := 0
 	for scanner.Scan() {
@@ -30,4 +29,18 @@ func ProcessLinesInFile(path string, processor LineProcessor) {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+type LineMultiProcessor struct {
+	Processors []LineProcessor
+}
+
+func (m *LineMultiProcessor) ProcessLine(i int, line string) error {
+	for _, processor := range m.Processors {
+		err := processor.ProcessLine(i, line)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

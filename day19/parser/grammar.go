@@ -18,6 +18,10 @@ type grammarRule struct {
 	expansions []expansion
 }
 
+func (g *grammar) getRule(ruleNum int) grammarRule {
+	return g.rules[ruleNum]
+}
+
 type expansion []grammarToken
 
 type grammarToken struct {
